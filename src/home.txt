@@ -1,0 +1,100 @@
+import React, { useEffect, useState } from 'react';
+import Layout from './layout/Layout';
+import CardDeck from './component/CardDeck';
+import axios from 'axios';
+import { keys } from './config';
+import Spinner from './component/Spinner';
+import SearchComponent from './component/SearchComponent';
+
+export default function Home() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1)
+  const [slug, setSlug] = useState('')
+
+  useEffect(() => {
+    fetchData();
+  }, [page]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${keys.uri}/top-headlines`, {
+        params: {
+          apiKey: keys.api_key,
+          country: 'in',
+          pageSize: 20,
+          page: page,
+          q: ''
+        },
+      });
+      setData(res.data);
+      setLoading(false);
+    } catch (error) {
+      //handle Logging
+      setLoading(false);
+    }
+  };
+
+  const handlePagination = (action) => {
+    let total = Math.ceil(data.totalResults / 20)
+    console.log(total)
+    switch (action) {
+      case 'inc':
+        if (page < total) {
+          setPage(page + 1)
+        }
+        break
+      case 'dec':
+        if (page > 1) {
+          setPage(page - 1)
+        }
+        break
+      default:
+        break
+    }
+  }
+
+  const handleSearch = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${keys.uri}/top-headlines`, {
+        params: {
+          apiKey: keys.api_key,
+          country: 'in',
+          pageSize: 20,
+          page: page,
+          q: slug
+        },
+      });
+      setData(res.data);
+      setLoading(false);
+    } catch (error) {
+      //handle Logging
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <>
+        <div className="h-screen w-screen flex justify-center items-center">
+          <Spinner />
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Layout>
+        <SearchComponent slug={slug} setSlug={setSlug} handleSearch={handleSearch} />
+        {
+          data && (
+            <CardDeck data={data.articles} handlePagination={handlePagination} currentPage={page} />
+          )
+        }
+      </Layout>
+    </>
+  );
+}
